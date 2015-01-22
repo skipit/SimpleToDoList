@@ -9,6 +9,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,7 @@ public class ToDoItemDb extends SQLiteOpenHelper {
 
 
     public void addTodoItem(TodoItem item) {
+        Log.d("SimpleToDo Adding: ", item.getBody());
         // Open database connection
         SQLiteDatabase db = this.getWritableDatabase();
         // Define values for each field
@@ -97,6 +99,7 @@ public class ToDoItemDb extends SQLiteOpenHelper {
 
     public int getTodoItemCount() {
         String countQuery = "SELECT  * FROM " + TABLE_NAME;
+        Log.d("Database: ", countQuery);
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(countQuery, null);
         cursor.close();
@@ -105,6 +108,7 @@ public class ToDoItemDb extends SQLiteOpenHelper {
     }
 
     public int updateTodoItem(TodoItem item) {
+        Log.d("SimpleToDo Updating: ", item.getBody() +","+item.getId());
         // Open database for writing
         SQLiteDatabase db = this.getWritableDatabase();
         // Setup fields to update
@@ -120,6 +124,7 @@ public class ToDoItemDb extends SQLiteOpenHelper {
     }
 
     public void deleteTodoItem(TodoItem item) {
+        Log.d("SimpleToDo Deleting: ", item.getBody() +","+item.getId());
         // Open database for writing
         SQLiteDatabase db = this.getWritableDatabase();
         // Delete the record with the specified id

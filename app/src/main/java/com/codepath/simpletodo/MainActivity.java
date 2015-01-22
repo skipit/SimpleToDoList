@@ -3,6 +3,7 @@ package com.codepath.simpletodo;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,14 +18,16 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    ArrayList<String> items;
-    ArrayAdapter<String> itemsAdapter;
+    List<TodoItem> items;
+    TodoItemsAdapter itemsAdapter;
     ListView lvItems;
     Button btnAddItem;
+    ToDoItemDb db;
 
 
     public static final int REQ_CODE_EDIT_VALUE = 1;
@@ -34,9 +37,11 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        db = new ToDoItemDb(this);
+
         lvItems = (ListView) findViewById(R.id.lvItems);
-        readItems();
-        itemsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, items);
+        items = db.getAllTodoItems();
+        itemsAdapter = new TodoItemsAdapter(this, items);
         lvItems.setAdapter(itemsAdapter);
         btnAddItem = (Button) findViewById(R.id.btnAddItem);
 
@@ -48,9 +53,10 @@ public class MainActivity extends ActionBarActivity {
           new AdapterView.OnItemLongClickListener() {
               @Override
               public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                  items.remove(position);
-                  itemsAdapter.notifyDataSetChanged();
-                  writeItems();
+                  TodoItem removeItem = items.get(position);
+                  db.deleteTodoItem(removeItem); //-- Remove from Database
+                  items.remove(position); //-- Remove from List
+                  itemsAdapter.notifyDataSetChanged(); //-- Update the Adapter
                   return true;
               }
           }
@@ -60,7 +66,7 @@ public class MainActivity extends ActionBarActivity {
                 new AdapterView.OnItemClickListener() {
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         Intent i = new Intent(MainActivity.this, EditItemActivity.class);
-                        i.putExtra("edit_value", items.get(position));
+                        i.putExtra("edit_value", items.get(position).getBody());
                         i.putExtra("edit_position", position);
                         startActivityForResult(i, REQ_CODE_EDIT_VALUE);
                     }
@@ -93,29 +99,12 @@ public class MainActivity extends ActionBarActivity {
     public void onAddItem(View v) {
         EditText etNewItem = (EditText) findViewById(R.id.etNewItem);
         String itemText = etNewItem.getText().toString();
-        itemsAdapter.add(itemText);
+        TodoItem newItem = new TodoItem(itemText);
+        newItem.setCompleted(false);
+        items.add(newItem);
+        itemsAdapter.notifyDataSetChanged();
+        db.addTodoItem(newItem);
         etNewItem.setText("");
-        writeItems();
-    }
-
-    private void readItems() {
-        File filesDir  = getFilesDir();
-        File todoFile = new File(filesDir, "todo.txt");
-        try {
-            items = new ArrayList<String>(FileUtils.readLines(todoFile));
-        } catch (IOException e) {
-            items = new ArrayList<String>();
-        }
-    }
-
-    private void writeItems() {
-        File filesDir  = getFilesDir();
-        File todoFile = new File(filesDir, "todo.txt");
-        try {
-            FileUtils.writeLines(todoFile, items);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -124,9 +113,11 @@ public class MainActivity extends ActionBarActivity {
 
             String newValue = data.getExtras().getString("new_value");
             int position = data.getIntExtra("edit_position",0);
-            items.set(position, newValue);
-            itemsAdapter.notifyDataSetChanged();
-            writeItems();
+            TodoItem oldItem = items.get(position); //-- Get the Old Item
+            oldItem.setBody(newValue);  //-- Update the Body
+            db.updateTodoItem(oldItem); //-- Update the Database
+            items.set(position, oldItem); //-- Update the items for display
+            itemsAdapter.notifyDataSetChanged(); //-- Notify the Adapter to update itself.
         }
     }
 }
